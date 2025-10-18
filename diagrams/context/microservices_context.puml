@@ -1,0 +1,25 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Контекстная диаграмма - Система умного дома (микросервисы)
+
+' Пользователи системы
+Person(user, "Пользователь системы")
+Person(admin, "Администратор", "настраивает и управляет системой")
+
+' Наша система
+System(smart_home_system, "Умный дом", "Система из микросервисов, которая управляет домом, устройствами и собирает данные")
+
+' Внешние системы
+System_Ext(temperature_api, "Сервис погоды", "Внешний сервис, который дает информацию о температуре на улице")
+System_Ext(notification_service, "Сервис уведомлений", "Внешний сервис для отправки SMS и email уведомлений")
+System_Ext(physical_devices, "Датчики в доме", "Физические устройства: датчики температуры, освещения, движения")
+
+' Связи между компонентами
+Rel(user, smart_home_system, "Смотрит температуру, управляет домом", "Мобильное приложение")
+Rel(admin, smart_home_system, "Настраивает систему", "Веб-интерфейс")
+
+Rel(smart_home_system, temperature_api, "Получает данные о погоде", "HTTP API")
+Rel(smart_home_system, notification_service, "Отправляет уведомления", "HTTP API")
+Rel(physical_devices, smart_home_system, "Отправляет данные о температуре", "WiFi")
+@enduml

@@ -1,0 +1,50 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов - Сервис устройств
+
+Container_Boundary(device_service_boundary, "Сервис устройств") {
+    Component(api_controller, "Контроллер API", "Go", "Принимает запросы от пользователей")
+    
+    Component(device_manager, "Менеджер устройств", "Go", "Основная логика управления устройствами")
+    Component(registration_handler, "Регистратор устройств", "Go", "Регистрирует новые устройства")
+    Component(property_manager, "Менеджер свойств", "Go", "Управляет настройками устройств")
+    Component(state_manager, "Менеджер состояний", "Go", "Отслеживает состояние устройств")
+    
+    Component(device_repository, "Репозиторий устройств", "Go", "Работает с базой данных")
+    Component(message_publisher, "Отправитель сообщений", "Go", "Отправляет события в очередь")
+    
+    ComponentDb(devices_db, "База устройств", "PostgreSQL", "Хранит информацию об устройствах")
+}
+
+Container(house_service, "Сервис домов", "Go", "Управляет домами и комнатами")
+Container(message_queue, "Очередь сообщений", "RabbitMQ", "Передает сообщения между сервисами")
+Container(telemetry_service, "Сервис данных", "Go", "Обрабатывает данные с датчиков")
+
+' Внутренние связи компонентов
+Rel(api_controller, device_manager, "Использует", "Вызовы функций")
+Rel(device_manager, registration_handler, "Использует", "Вызовы функций")
+Rel(device_manager, property_manager, "Использует", "Вызовы функций")
+Rel(device_manager, state_manager, "Использует", "Вызовы функций")
+
+Rel(device_manager, device_repository, "Использует", "Вызовы функций")
+Rel(device_manager, message_publisher, "Использует", "Вызовы функций")
+
+Rel(device_repository, devices_db, "Читает/записывает", "SQL")
+
+' Взаимодействие с внешними сервисами
+Rel(registration_handler, house_service, "Проверяет принадлежность дома", "HTTP")
+Rel(message_publisher, message_queue, "Отправляет события", "AMQP")
+
+' Внешние запросы к сервису устройств
+Rel(telemetry_service, api_controller, "Получает информацию об устройствах", "HTTP")
+
+note right of device_manager
+  Что делает менеджер устройств:
+  - Добавляет новые устройства
+  - Изменяет настройки
+  - Отслеживает состояние
+  - Отправляет уведомления
+end note
+
+@enduml

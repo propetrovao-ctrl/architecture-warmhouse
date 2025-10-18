@@ -1,0 +1,86 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма классов - Обработка данных с датчиков
+
+' Главный класс
+class TelemetryService {
+    + ProcessData() : обрабатывает данные с датчиков
+    + GetHistory() : получает исторические данные
+    + ConfigureAlerts() : настраивает уведомления
+}
+
+' Класс для получения сообщений
+class MessageConsumer {
+    + GetMessage() : получает сообщение из очереди
+    + ValidateMessage() : проверяет сообщение
+    + ConfirmMessage() : подтверждает получение
+}
+
+' Класс для обработки данных
+class DataProcessor {
+    + ProcessData() : обрабатывает входящие данные
+    + ValidateData() : проверяет корректность данных
+    + AddWeatherData() : добавляет данные о погоде
+}
+
+' Класс для группировки данных
+class DataAggregator {
+    + GroupData() : группирует данные по времени
+    + CalculateAverage() : вычисляет среднее значение
+    + FindAnomalies() : находит аномальные значения
+}
+
+' Класс для сохранения данных
+class StorageManager {
+    + SaveData() : сохраняет данные в базу
+    + UpdateData() : обновляет существующие данные
+    + DeleteOldData() : удаляет старые данные
+}
+
+' Класс для уведомлений
+class AlertManager {
+    + CheckThresholds() : проверяет пороговые значения
+    + SendAlert() : отправляет уведомление
+    + ConfigureThresholds() : настраивает пороги
+}
+
+' Структуры данных
+class TelemetryData {
+    + deviceId : ID устройства
+    + propertyType : тип данных (температура)
+    + value : значение с датчика
+    + timestamp : время измерения
+    + location : место установки
+}
+
+class AggregatedData {
+    + deviceId : ID устройства
+    + averageValue : среднее значение
+    + minValue : минимальное значение
+    + maxValue : максимальное значение
+    + timeWindow : период времени
+}
+
+class Alert {
+    + deviceId : ID устройства
+    + threshold : пороговое значение
+    + currentValue : текущее значение
+    + severity : важность уведомления
+    + timestamp : время уведомления
+}
+
+' Связи между классами
+TelemetryService --> MessageConsumer : uses
+TelemetryService --> DataProcessor : uses
+TelemetryService --> DataAggregator : uses
+TelemetryService --> StorageManager : uses
+TelemetryService --> AlertManager : uses
+
+MessageConsumer --> TelemetryData : creates
+DataProcessor --> TelemetryData : processes
+DataAggregator --> AggregatedData : creates
+StorageManager --> AggregatedData : saves
+AlertManager --> Alert : creates
+
+@enduml

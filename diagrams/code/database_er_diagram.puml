@@ -1,0 +1,133 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title ER диаграмма - База данных системы умного дома
+
+' Таблица пользователей
+entity Users {
+    * id : int (PK)
+    --
+    * username : varchar(50)
+    * email : varchar(100)
+    * password_hash : varchar(255)
+    * first_name : varchar(50)
+    * last_name : varchar(50)
+    * created_at : timestamp
+    * updated_at : timestamp
+    * is_active : boolean
+}
+
+' Таблица типов ролей
+entity RoleTypes {
+    * id : int (PK)
+    --
+    * name : varchar(50)
+    * description : varchar(200)
+    * created_at : timestamp
+}
+
+' Таблица ролей пользователей
+entity UserRoles {
+    * id : int (PK)
+    --
+    * user_id : int (FK)
+    * role_type_id : int (FK)
+    * house_id : int (FK)
+    * created_at : timestamp
+}
+
+' Таблица домов
+entity Houses {
+    * id : int (PK)
+    --
+    * name : varchar(100)
+    * address : varchar(200)
+    * owner_id : int (FK)
+    * created_at : timestamp
+    * updated_at : timestamp
+    * is_active : boolean
+}
+
+' Таблица участников домов
+entity HouseUsers {
+    * id : int (PK)
+    --
+    * house_id : int (FK)
+    * user_id : int (FK)
+    * role_type_id : int (FK)
+    * joined_at : timestamp
+    * is_active : boolean
+}
+
+' Таблица типов устройств
+entity DeviceTypes {
+    * id : int (PK)
+    --
+    * name : varchar(50)
+    * description : varchar(200)
+    * manufacturer : varchar(100)
+    * model : varchar(100)
+    * created_at : timestamp
+}
+
+' Таблица устройств
+entity Devices {
+    * id : int (PK)
+    --
+    * name : varchar(100)
+    * device_type_id : int (FK)
+    * house_id : int (FK)
+    * location : varchar(100)
+    * mac_address : varchar(17)
+    * ip_address : varchar(15)
+    * status : varchar(20)
+    * created_at : timestamp
+    * updated_at : timestamp
+    * is_active : boolean
+}
+
+' Таблица типов свойств
+entity PropertyTypes {
+    * id : int (PK)
+    --
+    * name : varchar(50)
+    * unit : varchar(20)
+    * data_type : varchar(20)
+    * min_value : float
+    * max_value : float
+    * description : varchar(200)
+    * created_at : timestamp
+}
+
+' Таблица свойств устройств
+entity TelemetryData {
+    * id : int (PK)
+    --
+    * device_id : int (FK)
+    * property_type_id : int (FK)
+    * value : float
+    * timestamp : timestamp
+    * status : varchar(20)
+    * created_at : timestamp
+}
+
+' Связи между таблицами
+Users ||--o{ UserRoles : "имеет роли"
+RoleTypes ||--o{ UserRoles : "определяет роль"
+Houses ||--o{ UserRoles : "в доме"
+
+Users ||--o{ Houses : "владеет"
+Houses ||--o{ HouseUsers : "содержит участников"
+Users ||--o{ HouseUsers : "участвует в доме"
+RoleTypes ||--o{ HouseUsers : "имеет роль в доме"
+
+Houses ||--o{ Devices : "содержит устройства"
+DeviceTypes ||--o{ Devices : "определяет тип"
+
+Devices ||--o{ TelemetryData : "имеет свойства"
+PropertyTypes ||--o{ TelemetryData : "определяет тип свойства"
+
+@enduml
+
+
+

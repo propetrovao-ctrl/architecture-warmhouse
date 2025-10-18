@@ -1,0 +1,55 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Диаграмма контейнеров - Система умного дома
+
+Person(user, "Пользователь системы")
+Person(admin, "Администратор", "настраивает и управляет системой")
+
+System_Boundary(smart_home_boundary, "Система умного дома") {
+    Container(api_gateway, "Шлюз API", "Nginx", "Единая точка входа для всех запросов")
+    
+    Container(auth_service, "Сервис регистрации/авторизации", "Go", "Авторизация/регистрация пользователя")
+    Container(house_service, "Сервис домов", "Go", "Управление домами и участниками")
+    Container(device_service, "Сервис устройств", "Go", "Управление устройствами, регистрация устройства, типами и состоянием")
+    Container(telemetry_service, "Сервис телеметрии", "Go", "Сбор, хранение и агрегация телеметрии")
+    
+    ContainerDb(users_db, "База пользователей", "PostgreSQL", "Хранит данные пользователей (Users, RoleTypes)")
+    ContainerDb(houses_db, "База домов", "PostgreSQL", "Хранит информацию о домах (Houses,House_users)")
+    ContainerDb(devices_db, "База устройств", "PostgreSQL", "Хранит данные об устройствах (Devices,DeviceTypes)" )
+    ContainerDb(telemetry_db, "База телеметрии", "PostgreSQL", "Хранит показания датчиков (TelemetryData, PropertyTypes)")
+    
+    Container(message_queue, "Очередь сообщений", "RabbitMQ", "Передает сообщения между сервисами")
+}
+
+System_Ext(temperature_api, "Сервис погоды", "Внешний сервис температуры")
+System_Ext(notification_service, "Сервис уведомлений", "Внешний сервис для SMS/email")
+System_Ext(physical_devices, "Датчики в доме", "Физические устройства")
+
+' Взаимодействие пользователей
+Rel(user, api_gateway, "Использует", "Мобильное приложение")
+Rel(admin, api_gateway, "Управляет", "Веб-интерфейс")
+
+' Маршрутизация через шлюз
+Rel(api_gateway, auth_service, "Направляет запросы авторизации", "HTTP")
+Rel(api_gateway, house_service, "Направляет запросы домов", "HTTP")
+Rel(api_gateway, device_service, "Направляет запросы устройств", "HTTP")
+Rel(api_gateway, telemetry_service, "Направляет запросы данных", "HTTP")
+
+' Сервисы и базы данных
+Rel(auth_service, users_db, "Читает/записывает данные пользователей", "SQL")
+Rel(house_service, houses_db, "Читает/записывает данные домов", "SQL")
+Rel(device_service, devices_db, "Читает/записывает данные устройств", "SQL")
+Rel(telemetry_service, telemetry_db, "Читает/записывает данные датчиков", "SQL")
+
+' Общение между сервисами
+Rel(device_service, house_service, "Проверяет принадлежность дома", "HTTP")
+Rel(device_service, message_queue, "Отправляет события устройств", "AMQP")
+Rel(telemetry_service, message_queue, "Получает данные из очереди", "AMQP")
+Rel(telemetry_service, device_service, "Получает информацию об устройствах", "HTTP")
+
+' Внешние интеграции
+Rel(telemetry_service, temperature_api, "Получает данные о погоде", "HTTP")
+Rel(telemetry_service, notification_service, "Отправляет уведомления", "HTTP")
+Rel(physical_devices, device_service, "Отправляет данные устройств", "WiFi")
+@enduml

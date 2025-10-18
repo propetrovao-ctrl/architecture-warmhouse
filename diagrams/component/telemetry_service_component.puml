@@ -1,0 +1,47 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов - Сервис данных
+
+Container_Boundary(telemetry_service_boundary, "Сервис данных") {
+    Component(api_controller, "Контроллер API", "Go", "Принимает запросы на получение данных")
+    
+    Component(message_consumer, "Получатель сообщений", "Go", "Получает данные из очереди")
+    Component(telemetry_aggregator, "Агрегатор данных", "Go", "Обрабатывает и группирует данные")
+    Component(data_processor, "Обработчик данных", "Go", "Проверяет и обрабатывает входящие данные")
+    Component(storage_manager, "Менеджер хранения", "Go", "Сохраняет данные в базу")
+    Component(query_service, "Сервис запросов", "Go", "Отвечает на запросы исторических данных")
+    Component(alert_manager, "Менеджер уведомлений", "Go", "Проверяет пороговые значения и отправляет уведомления")
+    
+    Component(telemetry_repository, "Репозиторий данных", "Go", "Работает с базой данных")
+    Component(device_client, "Клиент сервиса устройств", "Go", "Общается с сервисом устройств")
+    
+    ComponentDb(telemetry_db, "База данных", "PostgreSQL", "Хранит показания датчиков")
+}
+
+Container(message_queue, "Очередь сообщений", "RabbitMQ", "Передает сообщения между сервисами")
+Container(device_service, "Сервис устройств", "Go", "Управляет информацией об устройствах")
+Container(temperature_api, "Сервис погоды", "Внешний сервис", "Дает данные о температуре на улице")
+Container(notification_service, "Сервис уведомлений", "Внешний сервис", "Отправляет SMS и email")
+
+' Внутренние связи компонентов
+Rel(api_controller, query_service, "Использует", "Вызовы функций")
+Rel(query_service, telemetry_repository, "Использует", "Вызовы функций")
+
+Rel(message_consumer, data_processor, "Использует", "Вызовы функций")
+Rel(data_processor, telemetry_aggregator, "Использует", "Вызовы функций")
+Rel(telemetry_aggregator, storage_manager, "Использует", "Вызовы функций")
+Rel(telemetry_aggregator, alert_manager, "Использует", "Вызовы функций")
+
+Rel(storage_manager, telemetry_repository, "Использует", "Вызовы функций")
+Rel(alert_manager, device_client, "Использует", "Вызовы функций")
+
+Rel(telemetry_repository, telemetry_db, "Читает/записывает", "SQL")
+
+' Взаимодействие с внешними сервисами
+Rel(message_consumer, message_queue, "Получает сообщения", "AMQP")
+Rel(device_client, device_service, "Получает информацию об устройствах", "HTTP")
+Rel(data_processor, temperature_api, "Получает данные о погоде", "HTTP")
+Rel(alert_manager, notification_service, "Отправляет уведомления", "HTTP")
+
+@enduml

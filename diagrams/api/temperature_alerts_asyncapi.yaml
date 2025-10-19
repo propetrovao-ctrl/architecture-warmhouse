@@ -1,0 +1,122 @@
+asyncapi: 2.6.0
+info:
+  title: Temperature Alerts Service
+  version: 1.0.0
+  description: |
+    Асинхронный сервис для отправки уведомлений о критических температурах.
+    
+    Использует WebSocket для real-time уведомлений о критических температурах.
+
+servers:
+  development:
+    url: ws://localhost:8082
+    protocol: ws
+    description: Локальный сервер разработки
+
+defaultContentType: application/json
+
+channels:
+  temperature/alerts:
+    publish:
+      operationId: publishTemperatureAlert
+      summary: Отправка уведомления о критической температуре
+      description: Отправляет уведомление когда температура выходит за критические границы
+      message:
+        $ref: '#/components/messages/TemperatureAlert'
+    subscribe:
+      operationId: subscribeToTemperatureAlerts
+      summary: Подписка на уведомления о температуре
+      description: Позволяет клиентам подписаться на уведомления о критических температурах
+      message:
+        $ref: '#/components/messages/TemperatureAlert'
+
+components:
+  messages:
+    TemperatureAlert:
+      name: TemperatureAlert
+      title: Temperature Alert Message
+      summary: Уведомление о критической температуре
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TemperatureAlertPayload'
+      examples:
+        - name: HighTemperatureAlert
+          summary: Уведомление о высокой температуре
+          payload:
+            alertId: "alert_12345"
+            alertType: "HIGH_TEMPERATURE"
+            severity: "CRITICAL"
+            sensorId: "temp_sensor_001"
+            location: "Гостиная"
+            currentTemperature: 32.5
+            threshold: 30.0
+            unit: "°C"
+            timestamp: "2024-01-15T14:30:00Z"
+            message: "Критически высокая температура в гостиной: 32.5°C"
+            houseId: 456
+
+  schemas:
+    TemperatureAlertPayload:
+      type: object
+      required:
+        - alertId
+        - alertType
+        - severity
+        - sensorId
+        - location
+        - currentTemperature
+        - threshold
+        - unit
+        - timestamp
+        - message
+        - houseId
+      properties:
+        alertId:
+          type: string
+          description: Уникальный идентификатор уведомления
+          example: "alert_12345"
+        alertType:
+          type: string
+          enum: [HIGH_TEMPERATURE, LOW_TEMPERATURE]
+          description: Тип уведомления
+          example: "HIGH_TEMPERATURE"
+        severity:
+          type: string
+          enum: [WARNING, CRITICAL]
+          description: Уровень критичности
+          example: "CRITICAL"
+        sensorId:
+          type: string
+          description: Идентификатор датчика
+          example: "temp_sensor_001"
+        location:
+          type: string
+          description: Местоположение датчика
+          example: "Гостиная"
+        currentTemperature:
+          type: number
+          format: float
+          description: Текущая температура
+          example: 32.5
+        threshold:
+          type: number
+          format: float
+          description: Пороговое значение температуры
+          example: 30.0
+        unit:
+          type: string
+          description: Единица измерения температуры
+          example: "°C"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения события
+          example: "2024-01-15T14:30:00Z"
+        message:
+          type: string
+          description: Человекочитаемое сообщение
+          example: "Критически высокая температура в гостиной: 32.5°C"
+        houseId:
+          type: integer
+          description: Идентификатор дома
+          example: 456

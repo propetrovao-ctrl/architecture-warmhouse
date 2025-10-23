@@ -30,17 +30,16 @@ services:
     networks:
       - smarthome-network
 
-  migrations:
+  db-init:
     build:
-      context: ./smart_home
-      dockerfile: Dockerfile
-    container_name: smarthome-migrations
+      context: .
+      dockerfile: Dockerfile.init
+    container_name: smarthome-db-init
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/smarthome
-    command: ["./migrate", "-command=up"]
     networks:
       - smarthome-network
 
@@ -52,7 +51,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      migrations:
+      db-init:
         condition: service_completed_successfully
       temperature-api:
         condition: service_started

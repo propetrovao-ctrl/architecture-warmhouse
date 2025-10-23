@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"smarthome/db"
 	"smarthome/models"
@@ -142,26 +143,16 @@ func (h *SensorHandler) CreateSensor(c *gin.Context) {
 		return
 	}
 
-	// Check if sensor with same name and location already exists
-	existingSensors, err := h.DB.GetSensors(context.Background())
+	sensor, err := h.DB.CreateSensor(context.Background(), sensorCreate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing sensors"})
-		return
-	}
-
-	for _, existing := range existingSensors {
-		if existing.Name == sensorCreate.Name && existing.Location == sensorCreate.Location {
+		// Check if it's a duplicate key error
+		if strings.Contains(err.Error(), "already exists") {
 			c.JSON(http.StatusConflict, gin.H{
 				"error": "Sensor with this name and location already exists",
-				"details": fmt.Sprintf("Sensor '%s' already exists in location '%s'", 
-					sensorCreate.Name, sensorCreate.Location),
+				"details": err.Error(),
 			})
 			return
 		}
-	}
-
-	sensor, err := h.DB.CreateSensor(context.Background(), sensorCreate)
-	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -108,6 +108,21 @@ func (db *DB) GetSensorByID(ctx context.Context, id int) (models.Sensor, error) 
 
 // CreateSensor creates a new sensor in the database
 func (db *DB) CreateSensor(ctx context.Context, s models.SensorCreate) (models.Sensor, error) {
+	// First check if sensor with same name and location already exists
+	checkQuery := `
+		SELECT COUNT(*) FROM sensors 
+		WHERE name = $1 AND location = $2
+	`
+	var count int
+	err := db.Pool.QueryRow(ctx, checkQuery, s.Name, s.Location).Scan(&count)
+	if err != nil {
+		return models.Sensor{}, fmt.Errorf("error checking for existing sensor: %w", err)
+	}
+	
+	if count > 0 {
+		return models.Sensor{}, fmt.Errorf("sensor with name '%s' and location '%s' already exists", s.Name, s.Location)
+	}
+
 	query := `
 		INSERT INTO sensors (name, type, location, unit, status, last_updated, created_at)
 		VALUES ($1, $2, $3, $4, 'inactive', $5, $5)
@@ -116,7 +131,7 @@ func (db *DB) CreateSensor(ctx context.Context, s models.SensorCreate) (models.S
 
 	now := time.Now()
 	var sensor models.Sensor
-	err := db.Pool.QueryRow(ctx, query,
+	err = db.Pool.QueryRow(ctx, query,
 		s.Name,
 		s.Type,
 		s.Location,

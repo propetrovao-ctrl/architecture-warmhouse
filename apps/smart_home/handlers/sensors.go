@@ -136,6 +136,30 @@ func (h *SensorHandler) CreateSensor(c *gin.Context) {
 		return
 	}
 
+	// Additional validation
+	if err := validateSensorCreate(sensorCreate); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if sensor with same name and location already exists
+	existingSensors, err := h.DB.GetSensors(context.Background())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing sensors"})
+		return
+	}
+
+	for _, existing := range existingSensors {
+		if existing.Name == sensorCreate.Name && existing.Location == sensorCreate.Location {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": "Sensor with this name and location already exists",
+				"details": fmt.Sprintf("Sensor '%s' already exists in location '%s'", 
+					sensorCreate.Name, sensorCreate.Location),
+			})
+			return
+		}
+	}
+
 	sensor, err := h.DB.CreateSensor(context.Background(), sensorCreate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -210,4 +234,68 @@ func (h *SensorHandler) UpdateSensorValue(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor value updated successfully"})
+}
+
+// validateSensorCreate performs additional validation on sensor creation data
+func validateSensorCreate(sensor models.SensorCreate) error {
+	// Validate name
+	if len(sensor.Name) == 0 {
+		return fmt.Errorf("sensor name cannot be empty")
+	}
+	if len(sensor.Name) > 100 {
+		return fmt.Errorf("sensor name cannot exceed 100 characters")
+	}
+
+	// Validate location
+	if len(sensor.Location) == 0 {
+		return fmt.Errorf("sensor location cannot be empty")
+	}
+	if len(sensor.Location) > 100 {
+		return fmt.Errorf("sensor location cannot exceed 100 characters")
+	}
+
+	// Validate type
+	validTypes := map[models.SensorType]bool{
+		models.Temperature: true,
+		models.Humidity:    true,
+		models.Pressure:    true,
+		models.Motion:      true,
+		models.Light:       true,
+	}
+	if !validTypes[sensor.Type] {
+		return fmt.Errorf("invalid sensor type: %s. Valid types are: temperature, humidity, pressure, motion, light", sensor.Type)
+	}
+
+	// Validate unit (if provided)
+	if sensor.Unit != "" && len(sensor.Unit) > 20 {
+		return fmt.Errorf("sensor unit cannot exceed 20 characters")
+	}
+
+	// Validate unit based on sensor type
+	if sensor.Unit != "" {
+		switch sensor.Type {
+		case models.Temperature:
+			if sensor.Unit != "°C" && sensor.Unit != "°F" && sensor.Unit != "K" {
+				return fmt.Errorf("invalid unit for temperature sensor. Valid units: °C, °F, K")
+			}
+		case models.Humidity:
+			if sensor.Unit != "%" {
+				return fmt.Errorf("invalid unit for humidity sensor. Valid unit: %")
+			}
+		case models.Pressure:
+			if sensor.Unit != "Pa" && sensor.Unit != "kPa" && sensor.Unit != "bar" && sensor.Unit != "atm" {
+				return fmt.Errorf("invalid unit for pressure sensor. Valid units: Pa, kPa, bar, atm")
+			}
+		case models.Motion:
+			if sensor.Unit != "motion" && sensor.Unit != "no_motion" {
+				return fmt.Errorf("invalid unit for motion sensor. Valid units: motion, no_motion")
+			}
+		case models.Light:
+			if sensor.Unit != "lux" && sensor.Unit != "lm" {
+				return fmt.Errorf("invalid unit for light sensor. Valid units: lux, lm")
+			}
+		}
+	}
+
+	return nil
 }

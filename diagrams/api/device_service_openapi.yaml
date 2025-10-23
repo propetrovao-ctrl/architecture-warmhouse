@@ -1,0 +1,328 @@
+openapi: 3.0.3
+info:
+  title: Device Service API
+  description: |
+    API для управления устройствами в системе умного дома.
+    
+    Этот сервис отвечает за:
+    - Регистрацию новых устройств
+    - Получение информации об устройствах
+    - Обновление состояния устройств
+    - Управление настройками устройств
+  version: 1.0.0
+  contact:
+    name: Команда разработки
+    email: dev@smarthome.com
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Локальный сервер разработки
+  - url: https://api.smarthome.com/v1
+    description: Продакшн сервер
+
+paths:
+  /devices:
+    get:
+      summary: Получить список устройств
+      description: Возвращает список всех устройств в системе
+      parameters:
+        - name: house_id
+          in: query
+          description: ID дома для фильтрации устройств
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Статус устройства (active, inactive, maintenance)
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, maintenance]
+      responses:
+        '200':
+          description: Список устройств получен успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+                  total_count:
+                    type: integer
+                    description: Общее количество устройств
+              example:
+                devices:
+                  - id: 123
+                    name: "Датчик температуры в гостиной"
+                    type: "temperature_sensor"
+                    house_id: 456
+                    location: "Гостиная"
+                    status: "active"
+                    created_at: "2024-01-15T10:30:00Z"
+                total_count: 1
+
+    post:
+      summary: Зарегистрировать новое устройство
+      description: Добавляет новое устройство в систему
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCreate'
+            example:
+              name: "Новый датчик температуры"
+              device_type_id: 1
+              house_id: 456
+              location: "Кухня"
+              mac_address: "AA:BB:CC:DD:EE:FF"
+      responses:
+        '201':
+          description: Устройство успешно создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Неверные данные запроса
+        '409':
+          description: Устройство с таким MAC-адресом уже существует
+
+  /devices/{deviceId}:
+    get:
+      summary: Получить информацию об устройстве
+      description: Возвращает подробную информацию об устройстве по ID
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: ID устройства
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация об устройстве получена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Устройство не найдено
+
+    put:
+      summary: Обновить информацию об устройстве
+      description: Обновляет информацию об устройстве
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: ID устройства
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceUpdate'
+      responses:
+        '200':
+          description: Устройство успешно обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Устройство не найдено
+
+    delete:
+      summary: Удалить устройство
+      description: Удаляет устройство из системы
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: ID устройства
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Устройство успешно удалено
+        '404':
+          description: Устройство не найдено
+
+  /devices/{deviceId}/status:
+    put:
+      summary: Обновить статус устройства
+      description: Изменяет статус устройства (активно/неактивно/обслуживание)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: ID устройства
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, inactive, maintenance]
+                  description: Новый статус устройства
+                reason:
+                  type: string
+                  description: Причина изменения статуса
+              required:
+                - status
+            example:
+              status: "maintenance"
+              reason: "Плановое техническое обслуживание"
+      responses:
+        '200':
+          description: Статус устройства обновлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  device_id:
+                    type: integer
+                  new_status:
+                    type: string
+              example:
+                success: true
+                message: "Статус устройства обновлен"
+                device_id: 123
+                new_status: "maintenance"
+        '404':
+          description: Устройство не найдено
+
+components:
+  schemas:
+    Device:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор устройства
+          example: 123
+        name:
+          type: string
+          description: Название устройства
+          example: "Датчик температуры в гостиной"
+        device_type_id:
+          type: integer
+          description: ID типа устройства
+          example: 1
+        house_id:
+          type: integer
+          description: ID дома, где установлено устройство
+          example: 456
+        location:
+          type: string
+          description: Местоположение устройства в доме
+          example: "Гостиная"
+        mac_address:
+          type: string
+          description: MAC-адрес устройства
+          example: "AA:BB:CC:DD:EE:FF"
+        ip_address:
+          type: string
+          description: IP-адрес устройства
+          example: "192.168.1.100"
+        status:
+          type: string
+          enum: [active, inactive, maintenance]
+          description: Текущий статус устройства
+          example: "active"
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления
+          example: "2024-01-15T10:30:00Z"
+        is_active:
+          type: boolean
+          description: Активно ли устройство
+          example: true
+
+    DeviceCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Название устройства
+          example: "Новый датчик температуры"
+        device_type_id:
+          type: integer
+          description: ID типа устройства
+          example: 1
+        house_id:
+          type: integer
+          description: ID дома
+          example: 456
+        location:
+          type: string
+          description: Местоположение устройства
+          example: "Кухня"
+        mac_address:
+          type: string
+          description: MAC-адрес устройства
+          example: "AA:BB:CC:DD:EE:FF"
+      required:
+        - name
+        - device_type_id
+        - house_id
+        - location
+        - mac_address
+
+    DeviceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Новое название устройства
+          example: "Обновленное название датчика"
+        location:
+          type: string
+          description: Новое местоположение
+          example: "Спальня"
+        ip_address:
+          type: string
+          description: Новый IP-адрес
+          example: "192.168.1.101"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+          example: "Устройство не найдено"
+        code:
+          type: integer
+          description: Код ошибки
+          example: 404
+        details:
+          type: string
+          description: Дополнительные детали ошибки
+          example: "Device with ID 123 does not exist"
+
+
+

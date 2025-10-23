@@ -1,0 +1,31 @@
+### Тест Temperature API (Go)
+
+### 1. Проверка здоровья сервиса
+GET http://localhost:8081/temperature/health
+
+### 2. Получить температуру по location
+GET http://localhost:8081/temperature?location=Living Room
+
+### 3. Получить температуру по sensorId
+GET http://localhost:8081/temperature?sensorId=1
+
+### 4. Получить температуру по sensorId (другой способ)
+GET http://localhost:8081/temperature/2
+
+### 5. Получить температуру для Kitchen
+GET http://localhost:8081/temperature?location=Kitchen
+
+### 6. Получить температуру для Bedroom
+GET http://localhost:8081/temperature?location=Bedroom
+
+### 7. Получить температуру без параметров (должно вернуть Unknown)
+GET http://localhost:8081/temperature
+
+### 8. Получить температуру для неизвестного sensorId
+GET http://localhost:8081/temperature/999
+
+### 9. Получить температуру с обоими параметрами
+GET http://localhost:8081/temperature?location=Living Room&sensorId=1
+
+### 10. Проверка корневого endpoint
+GET http://localhost:8081/

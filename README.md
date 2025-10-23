@@ -14,15 +14,13 @@
 
 **Управление отоплением:**
 
-- Пользователи могут удаленно включать/выключать отопление в своих домах
+- Пользователи могут удалённо включать/выключать отопление в своих домах.
 - Система получает данные о температуре с датчиков, установленных в домах.
-- …
 
 **Мониторинг температуры:**
 
 - Пользователи могут просматривать текущую температуру в своих домах через веб-интерфейс.
-- Система поддерживает мониторинг температуры. 
-- …
+- Система получает данные о температуре с датчиков, установленных в домах.
 
 ### 2. Анализ архитектуры монолитного приложения
 
@@ -32,6 +30,7 @@
 База данных: PostgreSQL
 Архитектура: Монолитная, все компоненты системы (обработка запросов, бизнес-логика, работа с данными) находятся в рамках одного приложения.
 Взаимодействие: Синхронное, запросы обрабатываются последовательно.
+
 
 ### 3. Определение доменов и границы контекстов
 
@@ -47,10 +46,8 @@ TelemetryService - Сбор, хранение и агрегация телеме
 
 ### 5. Визуализация контекста системы — диаграмма С4
 
-Добавьте сюда диаграмму контекста в модели C4.
-
 ```markdown
-[Контекстная диаграмма]([URL](https://www.plantuml.com/plantuml/uml/SyfFKj2rKt3CoKnELR1Io4ZDoSa700001))
+[диаграмма контекста монолит](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/context/microservices_context.puml)
 ```
 
 # Задание 2. Проектирование микросервисной архитектуры
@@ -59,29 +56,36 @@ TelemetryService - Сбор, хранение и агрегация телеме
 
 **Диаграмма контейнеров (Containers)**
 
-Добавьте диаграмму.
+[Диаграмма контейнеров](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/container/microservices_container.puml)
 
 **Диаграмма компонентов (Components)**
 
-Добавьте диаграмму для каждого из выделенных микросервисов.
+[telemetry_service](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/component/telemetry_service_component.puml)
+[device_service](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/component/device_service_component.puml)
+
 
 **Диаграмма кода (Code)**
 
-Добавьте одну диаграмму или несколько.
+[telemetry_class](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/code/telemetry_class.puml)
 
 # Задание 3. Разработка ER-диаграммы
 
 Добавьте сюда ER-диаграмму. Она должна отражать ключевые сущности системы, их атрибуты и тип связей между ними.
+[er_diagram](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/code/database_er_diagram.puml)
 
 # Задание 4. Создание и документирование API
 
 ### 1. Тип API
 
 Укажите, какой тип API вы будете использовать для взаимодействия микросервисов. Объясните своё решение.
+restApi для синхронных методов
+AsyncAPI для асинхронных методов
 
 ### 2. Документация API
 
 Здесь приложите ссылки на документацию API для микросервисов, которые вы спроектировали в первой части проектной работы. Для документирования используйте Swagger/OpenAPI или AsyncAPI.
+[openApi](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/api/device_service_openapi.yaml)
+[asincApi](https://github.com/propetrovao-ctrl/architecture-warmhouse/blob/warmhause/diagrams/api/temperature_alerts_asyncapi.yaml)
 
 # Задание 5. Работа с docker и docker-compose
 

@@ -11,7 +11,6 @@ import (
 
 	"smarthome/db"
 	"smarthome/handlers"
-	"smarthome/migrations"
 	"smarthome/services"
 
 	"github.com/gin-gonic/gin"

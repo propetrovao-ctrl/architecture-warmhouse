@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -27,7 +28,12 @@ func main() {
 
 	log.Println("Connected to database successfully")
 
-	// Database migrations are handled by init script
+	// Run database migrations
+	log.Println("Running database migrations...")
+	if err := runMigrations(database.Pool); err != nil {
+		log.Fatalf("Migration failed: %v\n", err)
+	}
+	log.Println("Database migrations completed successfully")
 
 	// Initialize temperature service
 	temperatureAPIURL := getEnv("TEMPERATURE_API_URL", "http://temperature-api:8081")
@@ -88,4 +94,105 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// runMigrations executes database migrations
+func runMigrations(pool *pgxpool.Pool) error {
+	ctx := context.Background()
+	
+	// Create migrations table if it doesn't exist
+	createMigrationsTable := `
+		CREATE TABLE IF NOT EXISTS migrations (
+			id SERIAL PRIMARY KEY,
+			version VARCHAR(50) NOT NULL UNIQUE,
+			name VARCHAR(255) NOT NULL,
+			applied_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+		)
+	`
+	_, err := pool.Exec(ctx, createMigrationsTable)
+	if err != nil {
+		return fmt.Errorf("failed to create migrations table: %w", err)
+	}
+
+	// Check if sensors table exists
+	var tableExists bool
+	checkTableQuery := `
+		SELECT EXISTS (
+			SELECT FROM information_schema.tables 
+			WHERE table_schema = 'public' 
+			AND table_name = 'sensors'
+		)
+	`
+	err = pool.QueryRow(ctx, checkTableQuery).Scan(&tableExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if sensors table exists: %w", err)
+	}
+
+	if !tableExists {
+		log.Println("Creating sensors table...")
+		
+		// Create sensors table
+		createSensorsTable := `
+			CREATE TABLE sensors (
+				id SERIAL PRIMARY KEY,
+				name VARCHAR(100) NOT NULL,
+				type VARCHAR(50) NOT NULL,
+				location VARCHAR(100) NOT NULL,
+				value FLOAT DEFAULT 0,
+				unit VARCHAR(20),
+				status VARCHAR(20) NOT NULL DEFAULT 'inactive',
+				last_updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+				created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+			)
+		`
+		_, err = pool.Exec(ctx, createSensorsTable)
+		if err != nil {
+			return fmt.Errorf("failed to create sensors table: %w", err)
+		}
+
+		// Create indexes
+		indexes := []string{
+			"CREATE INDEX IF NOT EXISTS idx_sensors_type ON sensors(type)",
+			"CREATE INDEX IF NOT EXISTS idx_sensors_location ON sensors(location)",
+			"CREATE INDEX IF NOT EXISTS idx_sensors_status ON sensors(status)",
+			"CREATE INDEX IF NOT EXISTS idx_sensors_last_updated ON sensors(last_updated)",
+		}
+
+		for _, indexSQL := range indexes {
+			_, err = pool.Exec(ctx, indexSQL)
+			if err != nil {
+				return fmt.Errorf("failed to create index: %w", err)
+			}
+		}
+
+		// Add constraints
+		constraints := []string{
+			"ALTER TABLE sensors ADD CONSTRAINT chk_sensors_status CHECK (status IN ('active', 'inactive', 'maintenance', 'error'))",
+			"ALTER TABLE sensors ADD CONSTRAINT chk_sensors_type CHECK (type IN ('temperature', 'humidity', 'pressure', 'motion', 'light'))",
+			"ALTER TABLE sensors ADD CONSTRAINT chk_sensors_value_range CHECK (value >= -50 AND value <= 100)",
+			"ALTER TABLE sensors ADD CONSTRAINT uq_sensors_name_location UNIQUE (name, location)",
+		}
+
+		for _, constraintSQL := range constraints {
+			_, err = pool.Exec(ctx, constraintSQL)
+			if err != nil {
+				log.Printf("Warning: failed to add constraint (may already exist): %v", err)
+			}
+		}
+
+		// Record migration
+		_, err = pool.Exec(ctx, `
+			INSERT INTO migrations (version, name) 
+			VALUES ('001', 'create_sensors_table')
+		`)
+		if err != nil {
+			log.Printf("Warning: failed to record migration: %v", err)
+		}
+
+		log.Println("Sensors table created successfully")
+	} else {
+		log.Println("Sensors table already exists, skipping migration")
+	}
+
+	return nil
 }

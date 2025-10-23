@@ -13,8 +13,9 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Build the application
+# Build the application and migration tool
 RUN CGO_ENABLED=0 GOOS=linux go build -o smarthome
+RUN CGO_ENABLED=0 GOOS=linux go build -o migrate ./cmd/migrate
 
 # Runtime stage
 FROM alpine:latest
@@ -25,8 +26,9 @@ RUN apk --no-cache add ca-certificates tzdata
 # Set working directory
 WORKDIR /app
 
-# Copy the binary from the builder stage
+# Copy the binaries from the builder stage
 COPY --from=builder /app/smarthome .
+COPY --from=builder /app/migrate .
 
 # Expose the port the app runs on
 EXPOSE 8080

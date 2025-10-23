@@ -11,6 +11,7 @@ import (
 
 	"smarthome/db"
 	"smarthome/handlers"
+	"smarthome/migrations"
 	"smarthome/services"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,17 @@ func main() {
 	defer database.Close()
 
 	log.Println("Connected to database successfully")
+
+	// Run database migrations
+	log.Println("Running database migrations...")
+	migrator := migrations.NewMigrator(database.Pool)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	
+	if err := migrator.RunMigrations(ctx); err != nil {
+		log.Fatalf("Migration failed: %v\n", err)
+	}
+	log.Println("Database migrations completed successfully")
 
 	// Initialize temperature service
 	temperatureAPIURL := getEnv("TEMPERATURE_API_URL", "http://temperature-api:8081")
